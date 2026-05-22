@@ -3,37 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArcEscrow - Deposit System</title>
+    <title>ArcEscrow - Premium Portal</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 50px; text-align: center; background-color: #f4f7f6; }
-        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: inline-block; }
-        button { background-color: #28a745; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 5px; cursor: pointer; margin-top: 20px; font-weight: bold; }
-        button:hover { background-color: #218838; }
-        #status { margin-top: 15px; font-weight: bold; color: #333; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); 
+            color: #f8fafc; 
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px;
+        }
+        .container {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+        h2 { font-size: 28px; margin-bottom: 10px; font-weight: 700; color: #38bdf8; letter-spacing: -0.5px; }
+        .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 30px; }
+        .info-box { background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 14px; margin-bottom: 12px; text-align: left; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .info-box span { display: block; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .info-box p { font-family: 'Courier New', Courier, monospace; font-size: 13px; color: #e2e8f0; word-break: break-all; }
+        button {
+            width: 100%;
+            background: linear-gradient(90deg, #38bdf8 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(38, 189, 248, 0.4); opacity: 0.95; }
+        button:active { transform: translateY(1px); }
+        #status { 
+            margin-top: 20px; 
+            font-size: 14px; 
+            padding: 12px; 
+            border-radius: 10px; 
+            display: none; 
+            background: rgba(255, 255, 255, 0.05);
+            animation: fadeIn 0.3s ease forwards;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>ArcEscrow Deposit System</h2>
-    <p><strong>Buyer Address:</strong> 0xeF2b94566BE5F10276042F7BaBB54985EE119C95</p>
-    <p><strong>Seller Address:</strong> 0x0814D1586F528db4023A6860cf9BE6EDDDE765d1</p>
+<div class="container">
+    <h2>ArcEscrow Portal</h2>
+    <p class="subtitle">Secure Escrow Deposit Dashboard</p>
     
-    <button id="depositBtn" onclick="handleDeposit()">Connect & Deposit USDC</button>
+    <div class="info-box">
+        <span>Buyer Address (Depositor)</span>
+        <p>0xeF2b94566BE5F10276042F7BaBB54985EE119C95</p>
+    </div>
+    
+    <div class="info-box">
+        <span>Seller Address (Beneficiary)</span>
+        <p>0x0814D1586F528db4023A6860cf9BE6EDDDE765d1</p>
+    </div>
+
+    <div class="info-box">
+        <span>Contract Routing</span>
+        <p>0x675737C2e0F5bFA2feE955e6e1F32b12b4402b52</p>
+    </div>
+    
+    <button id="depositBtn" onclick="handleDeposit()">Connect & Deposit Funds</button>
+    
     <div id="status"></div>
 </div>
 
 <script>
     // =============================================================
-    // ১. CONFIGURATION (APNAR DATA BOSANO HOYECHE)
+    // CONFIGURATION
     // =============================================================
     const escrowContractAddress = "0x675737C2e0F5bFA2feE955e6e1F32b12b4402b52"; 
     const usdcTokenAddress = "0x3600000000000000000000000000000000000000"; 
 
-    // =============================================================
-    // ২. ABI DEFINITIONS
-    // =============================================================
     const erc20ABI = [
         "function approve(address spender, uint256 amount) public returns (bool)",
         "function allowance(address owner, address spender) public view returns (uint256)"
@@ -45,18 +106,22 @@
     ];
 
     // =============================================================
-    // ৩. MAIN DEPOSIT LOGIC
+    // SYSTEM LOGIC
     // =============================================================
     async function handleDeposit() {
         const statusDiv = document.getElementById("status");
+        statusDiv.style.display = "block";
+        
         try {
             if (!window.ethereum) {
-                alert("MetaMask khuje paoya jayni! Please MetaMask install korun।");
+                alert("MetaMask not found! Please install MetaMask extension.");
+                statusDiv.style.color = "#f87171";
+                statusDiv.innerText = "❌ Error: MetaMask is required.";
                 return;
             }
             
-            statusDiv.style.color = "#333";
-            statusDiv.innerText = "Wallet connect kora hocche...";
+            statusDiv.style.color = "#38bdf8";
+            statusDiv.innerText = "🔄 Connecting to secure wallet session...";
             
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -66,43 +131,49 @@
             const expectedBuyer = "0xeF2b94566BE5F10276042F7BaBB54985EE119C95";
 
             if (userAddress.toLowerCase() !== expectedBuyer.toLowerCase()) {
-                statusDiv.style.color = "red";
-                statusDiv.innerText = "Error: Apni contract-er Buyer address (0xeF2b...) diye login korenni।";
-                alert("Somossa: Sudhumatru Buyer address connect thaklei deposit kaj korbe।");
+                statusDiv.style.color = "#f87171";
+                statusDiv.innerText = "❌ Access Denied: Connected wallet is not the authorized Buyer.";
+                alert("Authorization Failed: Please switch to the Buyer wallet (0xeF2b...) inside MetaMask.");
                 return;
             }
 
-            statusDiv.innerText = "Contract specifications read kora hocche...";
+            statusDiv.innerText = "🔄 Fetching escrow payload specifications...";
             const escrowContract = new ethers.Contract(escrowContractAddress, escrowABI, signer);
             const usdcContract = new ethers.Contract(usdcTokenAddress, erc20ABI, signer);
 
             const depositAmount = await escrowContract.amount();
 
-            statusDiv.innerText = "USDC Allowance check kora hocche...";
+            statusDiv.innerText = "🔄 Verifying smart contract token allowance...";
             const currentAllowance = await usdcContract.allowance(userAddress, escrowContractAddress);
 
             // STEP 1: APPROVE
             if (currentAllowance.lt(depositAmount)) {
-                statusDiv.innerText = "MetaMask-e prothome USDC Allowance Approve (Gas fee) korun...";
+                statusDiv.style.color = "#f59e0b";
+                statusDiv.innerText = "⚠️ Action Required: Please APPROVE USDC allowance in MetaMask.";
                 const approveTx = await usdcContract.approve(escrowContractAddress, depositAmount);
-                statusDiv.innerText = "Approval process complete howar jonno wait kora hocche...";
+                
+                statusDiv.style.color = "#38bdf8";
+                statusDiv.innerText = "⏳ Synchronizing allowance allocation on-chain...";
                 await approveTx.wait(); 
             }
 
             // STEP 2: DEPOSIT TRANSACTION
-            statusDiv.innerText = "Ekhon MetaMask-e main Escrow Deposit-ti confirm (Gas fee) korun...";
+            statusDiv.style.color = "#f59e0b";
+            statusDiv.innerText = "⚠️ Action Required: Please CONFIRM the main Escrow Deposit in MetaMask.";
             const depositTx = await escrowContract.deposit();
-            statusDiv.innerText = "Blockchain network-e deposit confirm kora hocche...";
+            
+            statusDiv.style.color = "#38bdf8";
+            statusDiv.innerText = "⏳ Locking assets securely into Escrow Vault...";
             await depositTx.wait(); 
             
-            statusDiv.style.color = "green";
-            statusDiv.innerText = "Success! Escrow deposit thikbhabe somponno hoyeche।";
-            alert("Sfolota! Deposit thikbhabe somponno hoyeche।");
+            statusDiv.style.color = "#4ade80";
+            statusDiv.innerText = "✅ Success! Vault Deposit Completed Safely.";
+            alert("🔒 Escrow Deposit Successful!");
 
         } catch (error) {
-            console.error("Transaction Error:", error);
-            statusDiv.style.color = "red";
-            statusDiv.innerText = "Error: " + (error.data?.message || error.message);
+            console.error(error);
+            statusDiv.style.color = "#f87171";
+            statusDiv.innerText = "❌ Session Aborted: " + (error.data?.message || error.message);
         }
     }
 </script>
